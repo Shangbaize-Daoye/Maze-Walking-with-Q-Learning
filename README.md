@@ -2,7 +2,7 @@
 
 A Machine Learning Project: A simple maze walking game using reinforcement learning algorithm, Q learning algorithm. Powered by the HTML5 game engine Egret.
 
-## How to Run the game
+## How to Run the Game
 
 **I will release the final runable version at some point, but for now you have to build it yourself.**
 
