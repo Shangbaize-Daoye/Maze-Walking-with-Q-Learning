@@ -26,14 +26,20 @@
 //  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //////////////////////////////////////////////////////////////////////////////////////
+import { Maze } from "./Maze";
+
 
 class Main extends egret.DisplayObjectContainer {
-
-
+    private stepTimeInterval = 500;
+    private timer = new egret.Timer(this.stepTimeInterval, 0);
+    private stageW: number;
+    private stageH: number;
+    private agent: egret.Bitmap;
 
     public constructor() {
         super();
         this.addEventListener(egret.Event.ADDED_TO_STAGE, this.onAddToStage, this);
+        this.timer.addEventListener(egret.TimerEvent.TIMER, this.nextStep, this);
     }
 
     private onAddToStage(event: egret.Event) {
@@ -66,7 +72,8 @@ class Main extends egret.DisplayObjectContainer {
         await this.loadResource()
         this.createGameScene();
         const result = await RES.getResAsync("description_json")
-        this.startAnimation(result);
+        //this.startAnimation(result);
+        this.timer.start();
         await platform.login();
         const userInfo = await platform.getUserInfo();
         console.log(userInfo);
@@ -95,19 +102,19 @@ class Main extends egret.DisplayObjectContainer {
     private createGameScene() {
         let sky = this.createBitmapByName("bg_jpg");
         this.addChild(sky);
-        let stageW = this.stage.stageWidth;
-        let stageH = this.stage.stageHeight;
-        sky.width = stageW;
-        sky.height = stageH;
+        this.stageW = this.stage.stageWidth;
+        this.stageH = this.stage.stageHeight;
+        sky.width = this.stageW;
+        sky.height = this.stageH;
 
         // 绘制迷宫
         let squareNumW = 10;
         let squareNumH = 10;
-        let squareSideLen1 = Math.round(stageW / (squareNumW + 2));
-        let squareSideLen2 = Math.round(stageH / (squareNumH + 2));
+        let squareSideLen1 = Math.round(this.stageW / (squareNumW + 2));
+        let squareSideLen2 = Math.round(this.stageH / (squareNumH + 2));
         let squareSideLen = squareSideLen1 < squareSideLen2 ? squareSideLen1 : squareSideLen2;
-        let paddingW = Math.round((stageW - squareNumW * squareSideLen) / 2);
-        let paddingH = Math.round((stageH - squareNumH * squareSideLen) / 2);
+        let paddingW = Math.round((this.stageW - squareNumW * squareSideLen) / 2);
+        let paddingH = Math.round((this.stageH - squareNumH * squareSideLen) / 2);
         for (let row = 0; row < squareNumH; row++) {
             for (let column = 0; column < squareNumW; column++) {
                 let wall = this.createBitmapByName("wall_jpg");
@@ -118,13 +125,6 @@ class Main extends egret.DisplayObjectContainer {
                 this.addChild(wall);
             }
         }
-        let agent = this.createBitmapByName("agent_png");
-        agent.width = squareSideLen;
-        agent.height = squareSideLen;
-        agent.x = paddingW + 5 * squareSideLen;
-        agent.y = paddingH + 5 * squareSideLen;
-        this.addChild(agent);
-
 
 
         // let topMask = new egret.Shape();
@@ -169,8 +169,19 @@ class Main extends egret.DisplayObjectContainer {
         // textfield.x = 172;
         // textfield.y = 135;
         // this.textfield = textfield;
+    }
 
-
+    /**
+     * 初始化Agent
+     */
+    private initAgent(squareID: number) {
+        let agent = this.createBitmapByName("agent_png");
+        agent.width = squareSideLen;
+        agent.height = squareSideLen;
+        agent.x = paddingW + 5 * squareSideLen;
+        agent.y = paddingH + 5 * squareSideLen;
+        this.addChild(agent);
+        this.agent = agent;
     }
 
     /**
@@ -188,29 +199,33 @@ class Main extends egret.DisplayObjectContainer {
      * 描述文件加载成功，开始播放动画
      * Description file loading is successful, start to play the animation
      */
-    private startAnimation(result: string[]) {
-        let parser = new egret.HtmlTextParser();
+    // private startAnimation(result: string[]) {
+    //     let parser = new egret.HtmlTextParser();
 
-        let textflowArr = result.map(text => parser.parse(text));
-        let textfield = this.textfield;
-        let count = -1;
-        let change = () => {
-            count++;
-            if (count >= textflowArr.length) {
-                count = 0;
-            }
-            let textFlow = textflowArr[count];
+    //     let textflowArr = result.map(text => parser.parse(text));
+    //     let textfield = this.textfield;
+    //     let count = -1;
+    //     let change = () => {
+    //         count++;
+    //         if (count >= textflowArr.length) {
+    //             count = 0;
+    //         }
+    //         let textFlow = textflowArr[count];
 
-            // 切换描述内容
-            // Switch to described content
-            textfield.textFlow = textFlow;
-            let tw = egret.Tween.get(textfield);
-            tw.to({ "alpha": 1 }, 200);
-            tw.wait(2000);
-            tw.to({ "alpha": 0 }, 200);
-            tw.call(change, this);
-        };
+    //         // 切换描述内容
+    //         // Switch to described content
+    //         textfield.textFlow = textFlow;
+    //         let tw = egret.Tween.get(textfield);
+    //         tw.to({ "alpha": 1 }, 200);
+    //         tw.wait(2000);
+    //         tw.to({ "alpha": 0 }, 200);
+    //         tw.call(change, this);
+    //     };
 
-        change();
+    //     change();
+    // }
+
+    private nextStep() {
+        this.agent.x += 100;
     }
 }

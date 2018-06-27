@@ -75,7 +75,10 @@ var Main = (function (_super) {
     __extends(Main, _super);
     function Main() {
         var _this = _super.call(this) || this;
+        _this.stepTimeInterval = 500;
+        _this.timer = new egret.Timer(_this.stepTimeInterval, 0);
         _this.addEventListener(egret.Event.ADDED_TO_STAGE, _this.onAddToStage, _this);
+        _this.timer.addEventListener(egret.TimerEvent.TIMER, _this.nextStep, _this);
         return _this;
     }
     Main.prototype.onAddToStage = function (event) {
@@ -103,10 +106,13 @@ var Main = (function (_super) {
                     case 1:
                         _a.sent();
                         this.createGameScene();
-                        return [4 /*yield*/, RES.getResAsync("description_json")];
+                        return [4 /*yield*/, RES.getResAsync("description_json")
+                            //this.startAnimation(result);
+                        ];
                     case 2:
                         result = _a.sent();
-                        this.startAnimation(result);
+                        //this.startAnimation(result);
+                        this.timer.start();
                         return [4 /*yield*/, platform.login()];
                     case 3:
                         _a.sent();
@@ -180,6 +186,7 @@ var Main = (function (_super) {
         agent.x = paddingW + 5 * squareSideLen;
         agent.y = paddingH + 5 * squareSideLen;
         this.addChild(agent);
+        this.agent = agent;
         // let topMask = new egret.Shape();
         // topMask.graphics.beginFill(0x000000, 0.5);
         // topMask.graphics.drawRect(0, 0, stageW, 172);
@@ -232,28 +239,30 @@ var Main = (function (_super) {
      * 描述文件加载成功，开始播放动画
      * Description file loading is successful, start to play the animation
      */
-    Main.prototype.startAnimation = function (result) {
-        var _this = this;
-        var parser = new egret.HtmlTextParser();
-        var textflowArr = result.map(function (text) { return parser.parse(text); });
-        var textfield = this.textfield;
-        var count = -1;
-        var change = function () {
-            count++;
-            if (count >= textflowArr.length) {
-                count = 0;
-            }
-            var textFlow = textflowArr[count];
-            // 切换描述内容
-            // Switch to described content
-            textfield.textFlow = textFlow;
-            var tw = egret.Tween.get(textfield);
-            tw.to({ "alpha": 1 }, 200);
-            tw.wait(2000);
-            tw.to({ "alpha": 0 }, 200);
-            tw.call(change, _this);
-        };
-        change();
+    // private startAnimation(result: string[]) {
+    //     let parser = new egret.HtmlTextParser();
+    //     let textflowArr = result.map(text => parser.parse(text));
+    //     let textfield = this.textfield;
+    //     let count = -1;
+    //     let change = () => {
+    //         count++;
+    //         if (count >= textflowArr.length) {
+    //             count = 0;
+    //         }
+    //         let textFlow = textflowArr[count];
+    //         // 切换描述内容
+    //         // Switch to described content
+    //         textfield.textFlow = textFlow;
+    //         let tw = egret.Tween.get(textfield);
+    //         tw.to({ "alpha": 1 }, 200);
+    //         tw.wait(2000);
+    //         tw.to({ "alpha": 0 }, 200);
+    //         tw.call(change, this);
+    //     };
+    //     change();
+    // }
+    Main.prototype.nextStep = function () {
+        this.agent.x += 100;
     };
     return Main;
 }(egret.DisplayObjectContainer));
