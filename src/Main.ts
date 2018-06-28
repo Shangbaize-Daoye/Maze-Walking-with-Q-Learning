@@ -26,20 +26,81 @@
 //  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //////////////////////////////////////////////////////////////////////////////////////
-import { Maze } from "./Maze";
 
+// let mazeInfo = [];
+// for (let i = 0; i < 10; i++) {
+//     mazeInfo[i] = [];
+// }
+// for (let i = 0; i < 10; i++) {
+//     for (let j = 0; j < 10; j++) {
+//         mazeInfo[i][j] = -1;
+//     }
+// }
+
+// mazeInfo[0][3] = 1;
+// mazeInfo[1][1] = 0;
+// mazeInfo[1][2] = 0;
+// mazeInfo[1][3] = 0;
+// mazeInfo[1][4] = 0;
+// mazeInfo[1][5] = 0;
+// mazeInfo[1][7] = 0;
+// mazeInfo[1][8] = 0;
+// mazeInfo[2][1] = 0;
+// mazeInfo[2][5] = 0;
+// mazeInfo[2][6] = 0;
+// mazeInfo[2][7] = 0;
+// mazeInfo[2][8] = 0;
+// mazeInfo[3][1] = 0;
+// mazeInfo[3][3] = 0;
+// mazeInfo[3][8] = 0;
+// mazeInfo[4][1] = 0;
+// mazeInfo[4][3] = 0;
+// mazeInfo[4][4] = 0;
+// mazeInfo[4][5] = 0;
+// mazeInfo[4][6] = 0;
+// mazeInfo[4][7] = 0;
+// mazeInfo[4][8] = 0;
+// mazeInfo[5][3] = 0;
+// mazeInfo[6][1] = 0;
+// mazeInfo[6][2] = 0;
+// mazeInfo[6][3] = 0;
+// mazeInfo[6][5] = 0;
+// mazeInfo[6][6] = 0;
+// mazeInfo[6][7] = 0;
+// mazeInfo[6][8] = 0;
+// mazeInfo[7][1] = 0;
+// mazeInfo[7][8] = 0;
+// mazeInfo[8][1] = 0;
+// mazeInfo[8][2] = 0;
+// mazeInfo[8][3] = 0;
+// mazeInfo[8][4] = 0;
+// mazeInfo[8][5] = 0;
+// mazeInfo[8][6] = 0;
+// mazeInfo[8][7] = 0;
+// mazeInfo[8][8] = 0;
+// mazeInfo[9][6] = 1;
+//10x10 Maze
 
 class Main extends egret.DisplayObjectContainer {
-    private stepTimeInterval = 500;
-    private timer = new egret.Timer(this.stepTimeInterval, 0);
-    private stageW: number;
-    private stageH: number;
+    private stepTimeInterval = 108;
+    private stepTimer = new egret.Timer(this.stepTimeInterval, 0);
     private agent: egret.Bitmap;
+    private maze: Maze;
+    private paddingW;
+    private paddingH;
+    private squareSideLen;
+    private gamma;
+    private trainingTime;
 
     public constructor() {
         super();
+        // ====== 参数设定 ======
+        this.maze = new Maze(Matrix03());
+        this.gamma = 0.85;
+        this.trainingTime = 18;
+        // =====================
         this.addEventListener(egret.Event.ADDED_TO_STAGE, this.onAddToStage, this);
-        this.timer.addEventListener(egret.TimerEvent.TIMER, this.nextStep, this);
+        this.stepTimer.addEventListener(egret.TimerEvent.TIMER, this.nextStep, this);
     }
 
     private onAddToStage(event: egret.Event) {
@@ -71,12 +132,13 @@ class Main extends egret.DisplayObjectContainer {
     private async runGame() {
         await this.loadResource()
         this.createGameScene();
-        const result = await RES.getResAsync("description_json")
+        const result = await RES.getResAsync("description_json");
         //this.startAnimation(result);
-        this.timer.start();
         await platform.login();
         const userInfo = await platform.getUserInfo();
         console.log(userInfo);
+        this.maze.startTraining(this.gamma, this.trainingTime);
+        this.nextGame();
 
     }
 
@@ -102,30 +164,40 @@ class Main extends egret.DisplayObjectContainer {
     private createGameScene() {
         let sky = this.createBitmapByName("bg_jpg");
         this.addChild(sky);
-        this.stageW = this.stage.stageWidth;
-        this.stageH = this.stage.stageHeight;
-        sky.width = this.stageW;
-        sky.height = this.stageH;
+        let stageW = this.stage.stageWidth;
+        let stageH = this.stage.stageHeight;
+        sky.width = stageW;
+        sky.height = stageH;
 
         // 绘制迷宫
-        let squareNumW = 10;
-        let squareNumH = 10;
-        let squareSideLen1 = Math.round(this.stageW / (squareNumW + 2));
-        let squareSideLen2 = Math.round(this.stageH / (squareNumH + 2));
-        let squareSideLen = squareSideLen1 < squareSideLen2 ? squareSideLen1 : squareSideLen2;
-        let paddingW = Math.round((this.stageW - squareNumW * squareSideLen) / 2);
-        let paddingH = Math.round((this.stageH - squareNumH * squareSideLen) / 2);
-        for (let row = 0; row < squareNumH; row++) {
-            for (let column = 0; column < squareNumW; column++) {
-                let wall = this.createBitmapByName("wall_jpg");
-                wall.width = squareSideLen;
-                wall.height = squareSideLen;
-                wall.x = paddingW + row * squareSideLen;
-                wall.y = paddingH + column * squareSideLen;
-                this.addChild(wall);
+        let mazeMap = this.maze.mazeMap;
+        let squareNumW = this.maze.width;
+        let squareNumH = this.maze.height;
+        let squareSideLen1 = Math.round(stageW / (squareNumW + 2));
+        let squareSideLen2 = Math.round(stageH / (squareNumH + 2));
+        this.squareSideLen = squareSideLen1 < squareSideLen2 ? squareSideLen1 : squareSideLen2;
+        this.paddingW = Math.round((stageW - squareNumW * this.squareSideLen) / 2);
+        this.paddingH = Math.round((stageH - squareNumH * this.squareSideLen) / 2);
+        // 绘制墙壁
+        for (let i = 0; i < squareNumH; i++) {
+            for (let j = 0; j < squareNumW; j++) {
+                if (mazeMap[i][j] === -1) {
+                    let wall = this.createBitmapByName("wall_jpg");
+                    wall.width = this.squareSideLen;
+                    wall.height = this.squareSideLen;
+                    wall.x = this.paddingW + j * this.squareSideLen;
+                    wall.y = this.paddingH + i * this.squareSideLen;
+                    this.addChild(wall);
+                }
             }
         }
 
+        // 创建Agent
+        this.agent = this.createBitmapByName("agent_png");
+        this.agent.visible = false;
+        this.agent.width = this.squareSideLen;
+        this.agent.height = this.squareSideLen;
+        this.addChild(this.agent);
 
         // let topMask = new egret.Shape();
         // topMask.graphics.beginFill(0x000000, 0.5);
@@ -171,18 +243,18 @@ class Main extends egret.DisplayObjectContainer {
         // this.textfield = textfield;
     }
 
-    /**
-     * 初始化Agent
-     */
-    private initAgent(squareID: number) {
-        let agent = this.createBitmapByName("agent_png");
-        agent.width = squareSideLen;
-        agent.height = squareSideLen;
-        agent.x = paddingW + 5 * squareSideLen;
-        agent.y = paddingH + 5 * squareSideLen;
-        this.addChild(agent);
-        this.agent = agent;
-    }
+    // /**
+    //  * 初始化Agent
+    //  */
+    // private initAgent(squareID: number) {
+    //     // let agent = this.createBitmapByName("agent_png");
+    //     // agent.width = squareSideLen;
+    //     // agent.height = squareSideLen;
+    //     // agent.x = paddingW + 5 * squareSideLen;
+    //     // agent.y = paddingH + 5 * squareSideLen;
+    //     // this.addChild(agent);
+    //     // this.agent = agent;
+    // }
 
     /**
      * 根据name关键字创建一个Bitmap对象。name属性请参考resources/resource.json配置文件的内容。
@@ -225,7 +297,21 @@ class Main extends egret.DisplayObjectContainer {
     //     change();
     // }
 
+    private nextGame() {
+        this.agent.visible = true;
+        this.stepTimer.start();
+    }
+
     private nextStep() {
-        this.agent.x += 100;
+        let result = this.maze.nextStep();
+        let x = result[0];
+        let y = result[1];
+        let isGameEnded = result[2];
+        this.agent.x = this.paddingW + y * this.squareSideLen;
+        this.agent.y = this.paddingH + x * this.squareSideLen;
+        if (isGameEnded) {
+            this.stepTimer.stop();
+            this.nextGame();
+        }
     }
 }

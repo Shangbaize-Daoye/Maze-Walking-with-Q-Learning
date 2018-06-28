@@ -7,7 +7,9 @@
 //         mazeInfo[i][j] = -1;
 //     }
 // }
-
+var __reflect = (this && this.__reflect) || function (p, c, t) {
+    p.__class__ = c, t ? t.push(c) : t = [c], p.__types__ = p.__types__ ? t.concat(p.__types__) : t;
+};
 // mazeInfo[0][3] = 1;
 // mazeInfo[1][1] = 0;
 // mazeInfo[1][2] = 0;
@@ -51,14 +53,11 @@
 // mazeInfo[8][8] = 0;
 // mazeInfo[8][9] = 0;
 // mazeInfo[9][6] = 1;
-
-
 // class Square {
 //     id;
 //     x;
 //     y;
 //     adjacentSquares: [Square, number][];
-
 //     constructor(id, x, y, value, adjacentSquares) {
 //         this.id = id;
 //         this.x = x;
@@ -66,25 +65,17 @@
 //         this.adjacentSquares = adjacentSquares;
 //     }
 // }
-
-class Maze {
-    readonly width;
-    readonly height;
-    readonly mazeMap;
-
-    private rMatrix = {};
-    private qMatrix = {};
-    private squareNum = 0;
-    private isGameStarted = false;
-    private currentStateKey: string;
-
-    constructor(mazeMap: number[][]) {
+var Maze = (function () {
+    function Maze(mazeMap) {
+        this.rMatrix = {};
+        this.qMatrix = {};
+        this.squareNum = 0;
+        this.isGameStarted = false;
         this.width = mazeMap[0].length;
         this.height = mazeMap.length;
         this.mazeMap = mazeMap;
-
-        for (let i = 0; i < this.height; i++) {
-            for (let j = 0; j < this.width; j++) {
+        for (var i = 0; i < this.height; i++) {
+            for (var j = 0; j < this.width; j++) {
                 if (mazeMap[i][j] !== -1) {
                     this.squareNum++;
                     this.rMatrix["(" + i + ", " + j + ")"] = [];
@@ -94,14 +85,12 @@ class Maze {
                 }
             }
         }
-
-        for (let i = 0; i < this.height; i++) {
-            for (let j = 0; j < this.width; j++) {
+        for (var i = 0; i < this.height; i++) {
+            for (var j = 0; j < this.width; j++) {
                 if (this.rMatrix["(" + i + ", " + j + ")"] === undefined)
                     continue;
-
                 if (i - 1 > -1 && this.rMatrix["(" + (i - 1) + ", " + j + ")"] !== undefined) {
-                    let action = [];
+                    var action = [];
                     action.push(i - 1);
                     action.push(j);
                     if (this.rMatrix["(" + (i - 1) + ", " + j + ")"][0] === 1)
@@ -109,7 +98,7 @@ class Maze {
                     else
                         action.push(0);
                     this.rMatrix["(" + i + ", " + j + ")"].push(action);
-                    let qAction = action.concat();
+                    var qAction = action.concat();
                     qAction[2] = 0;
                     this.qMatrix["(" + i + ", " + j + ")"].push(qAction);
                 }
@@ -117,9 +106,8 @@ class Maze {
                     this.rMatrix["(" + i + ", " + j + ")"].push(null);
                     this.qMatrix["(" + i + ", " + j + ")"].push(null);
                 }
-
                 if (j + 1 < this.width && this.rMatrix["(" + i + ", " + (j + 1) + ")"] !== undefined) {
-                    let action = [];
+                    var action = [];
                     action.push(i);
                     action.push(j + 1);
                     if (this.rMatrix["(" + i + ", " + (j + 1) + ")"][0] === 1)
@@ -127,7 +115,7 @@ class Maze {
                     else
                         action.push(0);
                     this.rMatrix["(" + i + ", " + j + ")"].push(action);
-                    let qAction = action.concat();
+                    var qAction = action.concat();
                     qAction[2] = 0;
                     this.qMatrix["(" + i + ", " + j + ")"].push(qAction);
                 }
@@ -135,9 +123,8 @@ class Maze {
                     this.rMatrix["(" + i + ", " + j + ")"].push(null);
                     this.qMatrix["(" + i + ", " + j + ")"].push(null);
                 }
-
                 if (i + 1 < this.height && this.rMatrix["(" + (i + 1) + ", " + j + ")"] !== undefined) {
-                    let action = [];
+                    var action = [];
                     action.push(i + 1);
                     action.push(j);
                     if (this.rMatrix["(" + (i + 1) + ", " + j + ")"][0] === 1)
@@ -145,7 +132,7 @@ class Maze {
                     else
                         action.push(0);
                     this.rMatrix["(" + i + ", " + j + ")"].push(action);
-                    let qAction = action.concat();
+                    var qAction = action.concat();
                     qAction[2] = 0;
                     this.qMatrix["(" + i + ", " + j + ")"].push(qAction);
                 }
@@ -153,9 +140,8 @@ class Maze {
                     this.rMatrix["(" + i + ", " + j + ")"].push(null);
                     this.qMatrix["(" + i + ", " + j + ")"].push(null);
                 }
-
                 if (j - 1 > -1 && this.rMatrix["(" + i + ", " + (j - 1) + ")"] !== undefined) {
-                    let action = [];
+                    var action = [];
                     action.push(i);
                     action.push(j - 1);
                     if (this.rMatrix["(" + i + ", " + (j - 1) + ")"][0] === 1)
@@ -163,7 +149,7 @@ class Maze {
                     else
                         action.push(0);
                     this.rMatrix["(" + i + ", " + j + ")"].push(action);
-                    let qAction = action.concat();
+                    var qAction = action.concat();
                     qAction[2] = 0;
                     this.qMatrix["(" + i + ", " + j + ")"].push(qAction);
                 }
@@ -174,55 +160,53 @@ class Maze {
             }
         }
     }
-
-    startTraining(gamma: number, trainingTime: number) {
+    Maze.prototype.startTraining = function (gamma, trainingTime) {
         this.resetQMatrix();
-
-        let maxQValue = 0;
-
-        for (let i = 0; i < trainingTime; i++) {
-            let count = 0;
-            let randomNum = Math.floor(Math.random() * this.squareNum);
-            let currentStateKey: string;
-            for (let key in this.rMatrix) {
+        var maxQValue = 0;
+        for (var i = 0; i < trainingTime; i++) {
+            var count = 0;
+            var randomNum = Math.floor(Math.random() * this.squareNum);
+            var currentStateKey = void 0;
+            for (var key in this.rMatrix) {
                 if (count === randomNum) {
                     currentStateKey = key;
                     break;
                 }
                 count++;
             }
-            let actionListTempMap = {};
-            let valueActionListTempMap = {};
+            var actionListTempMap = {};
+            var valueActionListTempMap = {};
             while (this.rMatrix[currentStateKey][0] !== 1) {
                 if (actionListTempMap[currentStateKey] === undefined) {
-                    let actionList: [[number, number, number], number][] = [];
-                    for (let i = 1; i < 5; i++) {
-                        if (this.rMatrix[currentStateKey][i] !== null) {
-                            actionList.push([this.rMatrix[currentStateKey][i], i]);
+                    var actionList_1 = [];
+                    for (var i_1 = 1; i_1 < 5; i_1++) {
+                        if (this.rMatrix[currentStateKey][i_1] !== null) {
+                            actionList_1.push([this.rMatrix[currentStateKey][i_1], i_1]);
                         }
                     }
-                    actionListTempMap[currentStateKey] = actionList;
+                    actionListTempMap[currentStateKey] = actionList_1;
                 }
-                let actionList = actionListTempMap[currentStateKey];
-                let randomNum = Math.floor(Math.random() * actionList.length);
-                let nextStateKey = "(" + actionList[randomNum][0][0] + ", " + actionList[randomNum][0][1] + ")";
+                var actionList = actionListTempMap[currentStateKey];
+                var randomNum_1 = Math.floor(Math.random() * actionList.length);
+                var nextStateKey = "(" + actionList[randomNum_1][0][0] + ", " + actionList[randomNum_1][0][1] + ")";
                 if (valueActionListTempMap[nextStateKey] === undefined) {
-                    let valueActionList = [];
-                    for (let i = 1; i < 5; i++) {
-                        if (this.qMatrix[nextStateKey][i] !== null) {
-                            valueActionList.push(this.qMatrix[nextStateKey][i]);
+                    var valueActionList_1 = [];
+                    for (var i_2 = 1; i_2 < 5; i_2++) {
+                        if (this.qMatrix[nextStateKey][i_2] !== null) {
+                            valueActionList_1.push(this.qMatrix[nextStateKey][i_2]);
                         }
                     }
-                    valueActionListTempMap[nextStateKey] = valueActionList;
+                    valueActionListTempMap[nextStateKey] = valueActionList_1;
                 }
-                let valueActionList = valueActionListTempMap[nextStateKey];
-                let valueList = [];
-                for (let action of valueActionList) {
+                var valueActionList = valueActionListTempMap[nextStateKey];
+                var valueList = [];
+                for (var _i = 0, valueActionList_2 = valueActionList; _i < valueActionList_2.length; _i++) {
+                    var action = valueActionList_2[_i];
                     valueList.push(action[2]);
                 }
-                valueList.sort((x, y) => y - x);
-                let qValue = this.rMatrix[currentStateKey][actionList[randomNum][1]][2] + gamma * valueList[0];
-                this.qMatrix[currentStateKey][actionList[randomNum][1]][2] = qValue;
+                valueList.sort(function (x, y) { return y - x; });
+                var qValue = this.rMatrix[currentStateKey][actionList[randomNum_1][1]][2] + gamma * valueList[0];
+                this.qMatrix[currentStateKey][actionList[randomNum_1][1]][2] = qValue;
                 if (qValue > maxQValue)
                     maxQValue = qValue;
                 currentStateKey = nextStateKey;
@@ -230,8 +214,8 @@ class Maze {
             console.log("第" + (i + 1) + "次训练结束。");
         }
         if (maxQValue !== 0) {
-            for (let key in this.qMatrix) {
-                for (let i = 1; i < 5; i++) {
+            for (var key in this.qMatrix) {
+                for (var i = 1; i < 5; i++) {
                     if (this.qMatrix[key][i] !== null) {
                         this.qMatrix[key][i][2] = this.qMatrix[key][i][2] / maxQValue;
                     }
@@ -239,64 +223,60 @@ class Maze {
             }
         }
         this.showQMatrix();
-    }
-
-    private resetQMatrix() {
-        for (let key in this.qMatrix) {
-            for (let i = 1; i < 5; i++) {
+    };
+    Maze.prototype.resetQMatrix = function () {
+        for (var key in this.qMatrix) {
+            for (var i = 1; i < 5; i++) {
                 if (this.qMatrix[key][i] !== null) {
                     this.qMatrix[key][i][2] = 0;
                 }
             }
         }
-    }
-
-    showQMatrix() {
-        for (let key in this.qMatrix) {
-            let string = "状态" + key + ": ";
-            for (let i = 1; i < 5; i++) {
+    };
+    Maze.prototype.showQMatrix = function () {
+        for (var key in this.qMatrix) {
+            var string = "状态" + key + ": ";
+            for (var i = 1; i < 5; i++) {
                 if (this.qMatrix[key][i] !== null) {
                     string += "《动作: 到(" + this.qMatrix[key][i][0] + ", " + this.qMatrix[key][i][1] + "), Q值: " + this.qMatrix[key][i][2].toFixed(3) + "》; ";
                 }
             }
             console.log(string);
         }
-    }
-
-    nextStep(): [number, number, boolean] {
+    };
+    Maze.prototype.nextStep = function () {
         if (this.isGameStarted === false) {
             this.isGameStarted = true;
-            let count = 0;
-            let randomNum = Math.floor(Math.random() * this.squareNum);
-            for (let key in this.qMatrix) {
-                if (count === randomNum) {
+            var count_1 = 0;
+            var randomNum_2 = Math.floor(Math.random() * this.squareNum);
+            for (var key in this.qMatrix) {
+                if (count_1 === randomNum_2) {
                     this.currentStateKey = key;
-                    let string = key.slice(1, key.length - 1);
-                    let array = string.split(", ");
+                    var string = key.slice(1, key.length - 1);
+                    var array = string.split(", ");
                     return [parseInt(array[0]), parseInt(array[1]), false];
                 }
-                count++;
+                count_1++;
             }
         }
-
         // Agent正在根据Q矩阵的值，决定走迷宫的路线
-        let actionList = [];
-        for (let i = 1; i < 5; i++) {
+        var actionList = [];
+        for (var i = 1; i < 5; i++) {
             if (this.qMatrix[this.currentStateKey][i] !== null) {
                 actionList.push(this.qMatrix[this.currentStateKey][i]);
             }
         }
-        actionList.sort((x, y) => y[2] - x[2]);
-        let actionMax = actionList[0];
-        let count = 1;
-        for (let i = 1; i < actionList.length; i++) {
+        actionList.sort(function (x, y) { return y[2] - x[2]; });
+        var actionMax = actionList[0];
+        var count = 1;
+        for (var i = 1; i < actionList.length; i++) {
             if (actionList[i][2] === actionMax[2])
                 count++;
             else
                 break;
         }
-        let randomNum = Math.floor(Math.random() * count);
-        let nextStateKey = "(" + actionList[randomNum][0] + ", " + actionList[randomNum][1] + ")";
+        var randomNum = Math.floor(Math.random() * count);
+        var nextStateKey = "(" + actionList[randomNum][0] + ", " + actionList[randomNum][1] + ")";
         if (this.rMatrix[nextStateKey][0] === 1) {
             this.isGameStarted = false;
             this.currentStateKey = undefined;
@@ -306,9 +286,10 @@ class Maze {
             this.currentStateKey = nextStateKey;
             return [actionList[randomNum][0], actionList[randomNum][1], false];
         }
-    }
-}
-
+    };
+    return Maze;
+}());
+__reflect(Maze.prototype, "Maze");
 // class Point {       //迷宫格点类，x为列数，y为行数，value为（1：出口，0：可走，-1：墙）
 //     private x: number;
 //     private y: number;
@@ -366,3 +347,4 @@ class Maze {
 // let maze = [-1, 1, -1, -1, -1, 0, -1, -1, -1, 0, 0, -1, -1, -1, 1, -1];
 // let M = new Maze(maze);
 // console.log(M.getRmatrix(1, 1));
+//# sourceMappingURL=Maze.js.map

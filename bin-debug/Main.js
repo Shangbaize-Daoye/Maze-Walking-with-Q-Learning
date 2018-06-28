@@ -71,14 +71,71 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+// let mazeInfo = [];
+// for (let i = 0; i < 10; i++) {
+//     mazeInfo[i] = [];
+// }
+// for (let i = 0; i < 10; i++) {
+//     for (let j = 0; j < 10; j++) {
+//         mazeInfo[i][j] = -1;
+//     }
+// }
+// mazeInfo[0][3] = 1;
+// mazeInfo[1][1] = 0;
+// mazeInfo[1][2] = 0;
+// mazeInfo[1][3] = 0;
+// mazeInfo[1][4] = 0;
+// mazeInfo[1][5] = 0;
+// mazeInfo[1][7] = 0;
+// mazeInfo[1][8] = 0;
+// mazeInfo[2][1] = 0;
+// mazeInfo[2][5] = 0;
+// mazeInfo[2][6] = 0;
+// mazeInfo[2][7] = 0;
+// mazeInfo[2][8] = 0;
+// mazeInfo[3][1] = 0;
+// mazeInfo[3][3] = 0;
+// mazeInfo[3][8] = 0;
+// mazeInfo[4][1] = 0;
+// mazeInfo[4][3] = 0;
+// mazeInfo[4][4] = 0;
+// mazeInfo[4][5] = 0;
+// mazeInfo[4][6] = 0;
+// mazeInfo[4][7] = 0;
+// mazeInfo[4][8] = 0;
+// mazeInfo[5][3] = 0;
+// mazeInfo[6][1] = 0;
+// mazeInfo[6][2] = 0;
+// mazeInfo[6][3] = 0;
+// mazeInfo[6][5] = 0;
+// mazeInfo[6][6] = 0;
+// mazeInfo[6][7] = 0;
+// mazeInfo[6][8] = 0;
+// mazeInfo[7][1] = 0;
+// mazeInfo[7][8] = 0;
+// mazeInfo[8][1] = 0;
+// mazeInfo[8][2] = 0;
+// mazeInfo[8][3] = 0;
+// mazeInfo[8][4] = 0;
+// mazeInfo[8][5] = 0;
+// mazeInfo[8][6] = 0;
+// mazeInfo[8][7] = 0;
+// mazeInfo[8][8] = 0;
+// mazeInfo[9][6] = 1;
+//10x10 Maze
 var Main = (function (_super) {
     __extends(Main, _super);
     function Main() {
         var _this = _super.call(this) || this;
-        _this.stepTimeInterval = 500;
-        _this.timer = new egret.Timer(_this.stepTimeInterval, 0);
+        _this.stepTimeInterval = 108;
+        _this.stepTimer = new egret.Timer(_this.stepTimeInterval, 0);
+        // ====== 参数设定 ======
+        _this.maze = new Maze(Matrix03());
+        _this.gamma = 0.85;
+        _this.trainingTime = 18;
+        // =====================
         _this.addEventListener(egret.Event.ADDED_TO_STAGE, _this.onAddToStage, _this);
-        _this.timer.addEventListener(egret.TimerEvent.TIMER, _this.nextStep, _this);
+        _this.stepTimer.addEventListener(egret.TimerEvent.TIMER, _this.nextStep, _this);
         return _this;
     }
     Main.prototype.onAddToStage = function (event) {
@@ -106,20 +163,20 @@ var Main = (function (_super) {
                     case 1:
                         _a.sent();
                         this.createGameScene();
-                        return [4 /*yield*/, RES.getResAsync("description_json")
-                            //this.startAnimation(result);
-                        ];
+                        return [4 /*yield*/, RES.getResAsync("description_json")];
                     case 2:
                         result = _a.sent();
                         //this.startAnimation(result);
-                        this.timer.start();
                         return [4 /*yield*/, platform.login()];
                     case 3:
+                        //this.startAnimation(result);
                         _a.sent();
                         return [4 /*yield*/, platform.getUserInfo()];
                     case 4:
                         userInfo = _a.sent();
                         console.log(userInfo);
+                        this.maze.startTraining(this.gamma, this.trainingTime);
+                        this.nextGame();
                         return [2 /*return*/];
                 }
             });
@@ -163,30 +220,33 @@ var Main = (function (_super) {
         sky.width = stageW;
         sky.height = stageH;
         // 绘制迷宫
-        var squareNumW = 10;
-        var squareNumH = 10;
+        var mazeMap = this.maze.mazeMap;
+        var squareNumW = this.maze.width;
+        var squareNumH = this.maze.height;
         var squareSideLen1 = Math.round(stageW / (squareNumW + 2));
         var squareSideLen2 = Math.round(stageH / (squareNumH + 2));
-        var squareSideLen = squareSideLen1 < squareSideLen2 ? squareSideLen1 : squareSideLen2;
-        var paddingW = Math.round((stageW - squareNumW * squareSideLen) / 2);
-        var paddingH = Math.round((stageH - squareNumH * squareSideLen) / 2);
-        for (var row = 0; row < squareNumH; row++) {
-            for (var column = 0; column < squareNumW; column++) {
-                var wall = this.createBitmapByName("wall_jpg");
-                wall.width = squareSideLen;
-                wall.height = squareSideLen;
-                wall.x = paddingW + row * squareSideLen;
-                wall.y = paddingH + column * squareSideLen;
-                this.addChild(wall);
+        this.squareSideLen = squareSideLen1 < squareSideLen2 ? squareSideLen1 : squareSideLen2;
+        this.paddingW = Math.round((stageW - squareNumW * this.squareSideLen) / 2);
+        this.paddingH = Math.round((stageH - squareNumH * this.squareSideLen) / 2);
+        // 绘制墙壁
+        for (var i = 0; i < squareNumH; i++) {
+            for (var j = 0; j < squareNumW; j++) {
+                if (mazeMap[i][j] === -1) {
+                    var wall = this.createBitmapByName("wall_jpg");
+                    wall.width = this.squareSideLen;
+                    wall.height = this.squareSideLen;
+                    wall.x = this.paddingW + j * this.squareSideLen;
+                    wall.y = this.paddingH + i * this.squareSideLen;
+                    this.addChild(wall);
+                }
             }
         }
-        var agent = this.createBitmapByName("agent_png");
-        agent.width = squareSideLen;
-        agent.height = squareSideLen;
-        agent.x = paddingW + 5 * squareSideLen;
-        agent.y = paddingH + 5 * squareSideLen;
-        this.addChild(agent);
-        this.agent = agent;
+        // 创建Agent
+        this.agent = this.createBitmapByName("agent_png");
+        this.agent.visible = false;
+        this.agent.width = this.squareSideLen;
+        this.agent.height = this.squareSideLen;
+        this.addChild(this.agent);
         // let topMask = new egret.Shape();
         // topMask.graphics.beginFill(0x000000, 0.5);
         // topMask.graphics.drawRect(0, 0, stageW, 172);
@@ -225,6 +285,18 @@ var Main = (function (_super) {
         // textfield.y = 135;
         // this.textfield = textfield;
     };
+    // /**
+    //  * 初始化Agent
+    //  */
+    // private initAgent(squareID: number) {
+    //     // let agent = this.createBitmapByName("agent_png");
+    //     // agent.width = squareSideLen;
+    //     // agent.height = squareSideLen;
+    //     // agent.x = paddingW + 5 * squareSideLen;
+    //     // agent.y = paddingH + 5 * squareSideLen;
+    //     // this.addChild(agent);
+    //     // this.agent = agent;
+    // }
     /**
      * 根据name关键字创建一个Bitmap对象。name属性请参考resources/resource.json配置文件的内容。
      * Create a Bitmap object according to name keyword.As for the property of name please refer to the configuration file of resources/resource.json.
@@ -261,8 +333,21 @@ var Main = (function (_super) {
     //     };
     //     change();
     // }
+    Main.prototype.nextGame = function () {
+        this.agent.visible = true;
+        this.stepTimer.start();
+    };
     Main.prototype.nextStep = function () {
-        this.agent.x += 100;
+        var result = this.maze.nextStep();
+        var x = result[0];
+        var y = result[1];
+        var isGameEnded = result[2];
+        this.agent.x = this.paddingW + y * this.squareSideLen;
+        this.agent.y = this.paddingH + x * this.squareSideLen;
+        if (isGameEnded) {
+            this.stepTimer.stop();
+            this.nextGame();
+        }
     };
     return Main;
 }(egret.DisplayObjectContainer));
